@@ -15,14 +15,16 @@ import java.io.IOException;
  */
 public class PoemParser {
 
+    private static final int APP = 2159066;
+
     public PoemInfo parse(final String url) throws IOException {
         final Document doc = Jsoup.connect(url).get();
         final String poemName = getPoemName(doc);
         final String text = getText(doc);
         final String author = getAuthor(doc);
         final int year = getYear(doc);
-        ////final long ll = likes(doc);
-        return new PoemInfo(text, poemName, author, year, 0L);
+        final long likes = likes(url);
+        return new PoemInfo(text, poemName, author, year, likes);
     }
 
     public String getPoemName(final Document doc) {
@@ -45,11 +47,12 @@ public class PoemParser {
         return Integer.valueOf(yearAsStr);
     }
 
-    public long likes(final Document doc) {
-        final Elements elems = doc.select("div > iframe");
-        final Element parent = elems.first();
-        final Elements elem = parent.getElementsByAttribute("src");
-        return 0;
+    public long likes(final String url) throws IOException{
+        final String likeVk = "http://vk.com/widget_like.php?app=" + APP +"&url=" + url + "&notauth=1";
+        System.out.println("likeVk = " + likeVk);
+        final Document vk = Jsoup.connect(likeVk).get();
+        final String likes = getContent("div > b", vk);
+        return Integer.valueOf(likes);
     }
 
     @Nullable
