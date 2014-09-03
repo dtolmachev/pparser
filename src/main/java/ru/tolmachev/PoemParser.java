@@ -2,6 +2,8 @@ package ru.tolmachev;
 
 
 import com.sun.istack.internal.Nullable;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -9,6 +11,10 @@ import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Arrays;
 
 /**
  * Created by sunlight on 01.09.14.
@@ -23,7 +29,7 @@ public class PoemParser {
         final String text = getText(doc);
         final String author = getAuthor(doc);
         final int year = getYear(doc);
-        final long likes = likes(url);
+        final long[] likes = likes(url);
         return new PoemInfo(text, poemName, author, year, likes);
     }
 
@@ -47,12 +53,21 @@ public class PoemParser {
         return Integer.valueOf(yearAsStr);
     }
 
-    public long likes(final String url) throws IOException{
-        final String likeVk = "http://vk.com/widget_like.php?app=" + APP +"&url=" + url + "&notauth=1";
-        System.out.println("likeVk = " + likeVk);
-        final Document vk = Jsoup.connect(likeVk).get();
-        final String likes = getContent("div > b", vk);
-        return Integer.valueOf(likes);
+    public long[] likes(final String url) throws IOException{
+        final String vkApiUrl = "https://api.vk.com/method/likes.getList?type=sitepage&owner_id=1&item_id=1&page_url=" + url +"&filter=likes&offset=1&count=10000";
+        final Element body = Jsoup.connect(vkApiUrl).ignoreContentType(true).get().body();
+        final String json = body.text();
+        final JSONObject obj = new JSONObject(json);
+        final JSONObject resp = obj.getJSONObject("response");
+        final int amount = resp.getInt("count");
+        final long[] ids = new long[amount];
+
+        final JSONArray arr = resp.getJSONArray("users");
+        for (int i = 0; i < arr.length(); i++)
+        {
+            ids[i] = arr.getLong(i);
+        }
+        return ids;
     }
 
     @Nullable
